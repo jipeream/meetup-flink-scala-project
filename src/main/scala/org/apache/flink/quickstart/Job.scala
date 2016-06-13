@@ -5,16 +5,14 @@ import java.net.URI
 import javax.websocket.{ContainerProvider, OnClose, OnMessage, OnOpen, _}
 
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import flink.meetup.jsonparser.{Member, Venue}
-import org.apache.flink.api.scala.codegen.TypeInformationGen
 import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+
 //import org.apache.flink.streaming.api.functions.source.{RichSourceFunction, SourceFunction}
 //import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
-import com.fasterxml.jackson.databind.{DeserializationConfig, DeserializationFeature, ObjectMapper}
-import org.apache.flink.api.scala._
+import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 
-object RsvpJob {
+object Job {
   def main(args: Array[String]) {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
 
@@ -40,6 +38,12 @@ case class ScalaMeetupRSVGevent(
                                  var venue: Venue
                                )
 
+case class Member(
+                   var member_name: String,
+                   var photo: String,
+                   var member_id: String
+                 )
+
 case class Event(
                   var time: String,
                   var event_url: String,
@@ -63,10 +67,19 @@ case class Group_topics(
                          var topic_name: String
                        )
 
+case class Venue(
+                  var venue_id: String,
+                  var venue_name: String,
+                  var lon: String,
+                  var lat: String
+                )
+
 @ClientEndpoint object ScalaMeetupEndpoint {
+
   trait MessageHandler {
     def handleMessage(message: String)
   }
+
 }
 
 @ClientEndpoint class ScalaMeetupEndpoint(val endpointURI: URI) {
@@ -112,7 +125,6 @@ class ScalaMeetupStreamingSource() extends RichSourceFunction[ScalaMeetupRSVGeve
         val mapper: ObjectMapper = new ObjectMapper
         mapper.registerModule(DefaultScalaModule)
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        // mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         var event: ScalaMeetupRSVGevent = null
         try {
           event = mapper.readValue(message, classOf[ScalaMeetupRSVGevent])
